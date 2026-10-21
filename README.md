@@ -1,9 +1,9 @@
 # PAP.BookStore
 
-Caso práctico 1 de Programación Avanzada. Aplicación de librería desarrollada
-con ASP.NET MVC 5, .NET Framework 4.8.1 y Entity Framework 6 Database First.
+Caso práctico 1 de Programación Avanzada - Universidad Fidelitas
 
-Proyecto en desarrollo.
+Aplicación de librería desarrollada con ASP.NET MVC 5, .NET Framework 4.8.1 y Entity Framework 6 Database First.
+
 
 ## Estructura
 
