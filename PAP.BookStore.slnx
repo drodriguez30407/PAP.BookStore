@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="PAP.Business/PAP.Business.csproj" />
+  <Project Path="PAP.DataAccess/PAP.DataAccess.csproj" />
+  <Project Path="PAP.Mvc/PAP.Mvc.csproj" />
+  <Project Path="PAP.Repositories/PAP.Repositories.csproj" />
+</Solution>
