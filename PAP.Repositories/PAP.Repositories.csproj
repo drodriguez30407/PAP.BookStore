@@ -54,6 +54,7 @@
     <Compile Include="CategoryRepository.cs" />
     <Compile Include="GenreRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PublisherRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PAP.DataAccess\PAP.DataAccess.csproj">
