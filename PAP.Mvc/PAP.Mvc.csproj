@@ -127,6 +127,7 @@
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\AuthorsController.cs" />
     <Compile Include="Controllers\CategoriesController.cs" />
     <Compile Include="Controllers\GenresController.cs" />
@@ -192,6 +193,7 @@
     <Content Include="Views\Genres\Index.cshtml" />
     <Content Include="Views\Publishers\Index.cshtml" />
     <Content Include="Views\Authors\Index.cshtml" />
+    <Content Include="Views\Admin\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -232,6 +234,10 @@
     <ProjectReference Include="..\PAP.DataAccess\PAP.DataAccess.csproj">
       <Project>{ac752ded-44f3-4802-86b1-a6d6f5cbc89b}</Project>
       <Name>PAP.DataAccess</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PAP.Generators\PAP.Generators.csproj">
+      <Project>{ea141e23-db75-427d-b57a-14c9ca39cd41}</Project>
+      <Name>PAP.Generators</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
