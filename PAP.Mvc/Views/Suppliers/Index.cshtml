@@ -1,0 +1,356 @@
+﻿@model System.Collections.Generic.IEnumerable<PAP.DataAccess.Supplier>
+@using System.Linq
+@using PAP.DataAccess
+
+@{
+    ViewBag.Title = "Proveedores";
+    var suppliers = (Model ?? Enumerable.Empty<Supplier>()).ToList();
+    var formSupplier = ViewBag.Form as Supplier ?? new Supplier { IsActive = true };
+    string openModal = ViewBag.OpenModal as string;
+    bool editing = openModal == "edit";
+    string successMessage = TempData["Success"] as string;
+    string errorMessage = TempData["Error"] as string;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Proveedores</h1>
+        <p class="text-muted mb-0">Administre los proveedores de la librería.</p>
+    </div>
+    <button type="button" id="add-supplier-button" class="btn btn-primary">Agregar proveedor</button>
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success" role="status">@successMessage</div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+<div id="supplier-page-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+<p class="text-muted">@suppliers.Count @(suppliers.Count == 1 ? "proveedor registrado" : "proveedores registrados")</p>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <caption class="visually-hidden">Listado de proveedores y acciones disponibles.</caption>
+        <thead class="table-light">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Contacto</th>
+                <th scope="col">Correo</th>
+                <th scope="col">Teléfono</th>
+                <th scope="col">Dirección</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Editar</th>
+                <th scope="col">Eliminar</th>
+                <th scope="col">Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (suppliers.Count == 0)
+            {
+                <tr><td colspan="10" class="text-center text-muted py-4">No hay proveedores registrados. Puede agregar el primero con el botón superior.</td></tr>
+            }
+            else
+            {
+                foreach (var supplier in suppliers)
+                {
+                    <tr>
+                        <td>@supplier.Id</td>
+                        <td class="text-break">@supplier.Name</td>
+                        <td class="text-break">@(string.IsNullOrWhiteSpace(supplier.ContactName) ? "Sin contacto" : supplier.ContactName)</td>
+                        <td class="text-break">@(string.IsNullOrWhiteSpace(supplier.Email) ? "Sin correo" : supplier.Email)</td>
+                        <td class="text-break">@(string.IsNullOrWhiteSpace(supplier.Phone) ? "Sin teléfono" : supplier.Phone)</td>
+                        <td class="text-break" style="max-width: 16rem;">@(string.IsNullOrWhiteSpace(supplier.Address) ? "Sin dirección" : supplier.Address)</td>
+                        <td><span class="badge @(supplier.IsActive ? "bg-success" : "bg-secondary")">@(supplier.IsActive ? "Activo" : "Inactivo")</span></td>
+                        <td><button type="button" class="btn btn-sm btn-outline-primary js-supplier-action" data-action="edit" data-supplier-id="@supplier.Id" aria-label="Editar proveedor @supplier.Name">Editar</button></td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger js-supplier-action" data-action="delete" data-supplier-id="@supplier.Id" aria-label="Eliminar proveedor @supplier.Name">Eliminar</button></td>
+                        <td><button type="button" class="btn btn-sm btn-outline-secondary js-supplier-action" data-action="details" data-supplier-id="@supplier.Id" aria-label="Ver detalle del proveedor @supplier.Name">Detalle</button></td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="supplier-form-modal" tabindex="-1" aria-labelledby="supplier-form-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form class="modal-content" id="supplier-form" method="post"
+              action="@Url.Action(editing ? "Edit" : "Create", "Suppliers")"
+              data-create-url="@Url.Action("Create", "Suppliers")"
+              data-edit-url="@Url.Action("Edit", "Suppliers")"
+              data-details-url="@Url.Action("Details", "Suppliers")" data-open-mode="@openModal">
+            @Html.AntiForgeryToken()
+            @Html.Hidden("Id", formSupplier.Id, new { id = "supplier-id" })
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="supplier-form-title">@(editing ? "Editar proveedor" : "Agregar proveedor")</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                @Html.ValidationSummary(false, "", new { @class = "text-danger", id = "supplier-validation", role = "alert" })
+                <div class="mb-3">
+                    <label for="supplier-name" class="form-label">Nombre</label>
+                    @Html.TextBox("Name", formSupplier.Name, new { @class = "form-control", id = "supplier-name", maxlength = 200, aria_describedby = "supplier-name-help", required = "required" })
+                    <div id="supplier-name-help" class="form-text">Máximo 200 caracteres.</div>
+                    @Html.ValidationMessage("Name", "", new { @class = "text-danger" })
+                </div>
+                <div class="mb-3">
+                    <label for="supplier-contact-name" class="form-label">Contacto (opcional)</label>
+                    @Html.TextBox("ContactName", formSupplier.ContactName, new { @class = "form-control", id = "supplier-contact-name", maxlength = 150, aria_describedby = "supplier-contact-name-help" })
+                    <div id="supplier-contact-name-help" class="form-text">Máximo 150 caracteres.</div>
+                    @Html.ValidationMessage("ContactName", "", new { @class = "text-danger" })
+                </div>
+                <div class="mb-3">
+                    <label for="supplier-email" class="form-label">Correo electrónico (opcional)</label>
+                    @Html.TextBox("Email", formSupplier.Email, new { @class = "form-control", id = "supplier-email", maxlength = 150, aria_describedby = "supplier-email-help", type = "email" })
+                    <div id="supplier-email-help" class="form-text">Máximo 150 caracteres.</div>
+                    @Html.ValidationMessage("Email", "", new { @class = "text-danger" })
+                </div>
+                <div class="mb-3">
+                    <label for="supplier-phone" class="form-label">Teléfono (opcional)</label>
+                    @Html.TextBox("Phone", formSupplier.Phone, new { @class = "form-control", id = "supplier-phone", maxlength = 30, aria_describedby = "supplier-phone-help", type = "tel" })
+                    <div id="supplier-phone-help" class="form-text">Máximo 30 caracteres.</div>
+                    @Html.ValidationMessage("Phone", "", new { @class = "text-danger" })
+                </div>
+                <div class="mb-3">
+                    <label for="supplier-address" class="form-label">Dirección (opcional)</label>
+                    @Html.TextArea("Address", formSupplier.Address, new { @class = "form-control", id = "supplier-address", maxlength = 300, aria_describedby = "supplier-address-help", rows = 3 })
+                    <div id="supplier-address-help" class="form-text">Máximo 300 caracteres.</div>
+                    @Html.ValidationMessage("Address", "", new { @class = "text-danger" })
+                </div>
+                <div class="form-check mb-3">
+                    @Html.CheckBox("IsActive", formSupplier.IsActive, new { @class = "form-check-input", id = "supplier-is-active" })
+                    <label for="supplier-is-active" class="form-check-label">Activo</label>
+                    @Html.ValidationMessage("IsActive", "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="supplier-save-button">@(editing ? "Guardar cambios" : "Agregar")</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="supplier-details-modal" tabindex="-1" aria-labelledby="supplier-details-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="supplier-details-title">Detalle del proveedor</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body"><dl class="mb-0">
+                <dt>ID</dt><dd id="supplier-detail-id"></dd>
+                <dt>Nombre</dt><dd id="supplier-detail-name" class="text-break"></dd>
+                <dt>Contacto</dt><dd id="supplier-detail-contact-name" class="text-break"></dd>
+                <dt>Correo electrónico</dt><dd id="supplier-detail-email" class="text-break"></dd>
+                <dt>Teléfono</dt><dd id="supplier-detail-phone" class="text-break"></dd>
+                <dt>Dirección</dt><dd id="supplier-detail-address" class="text-break" style="white-space: pre-wrap;"></dd>
+                <dt>Estado</dt><dd id="supplier-detail-is-active"></dd>
+            </dl></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="supplier-delete-modal" tabindex="-1" aria-labelledby="supplier-delete-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="supplier-delete-form" method="post" action="@Url.Action("Delete", "Suppliers")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="supplier-delete-id" name="id" />
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="supplier-delete-title">Eliminar proveedor</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Desea eliminar el proveedor <strong id="supplier-delete-name" class="text-break"></strong>?</p>
+                <p class="text-muted mb-0">Los proveedores con órdenes de compra asociadas no se pueden eliminar.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger" id="supplier-delete-button">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+                (function () {
+                    "use strict";
+
+                    const form = document.getElementById("supplier-form");
+                    const nameInput = document.getElementById("supplier-name");
+                    const contactInput = document.getElementById("supplier-contact-name");
+                    const addressInput = document.getElementById("supplier-address");
+                    const activeInput = document.getElementById("supplier-is-active");
+                    const phoneInput = document.getElementById("supplier-phone");
+                    const emailInput = document.getElementById("supplier-email");
+                    const idInput = document.getElementById("supplier-id");
+                    const title = document.getElementById("supplier-form-title");
+                    const saveButton = document.getElementById("supplier-save-button");
+                    const pageError = document.getElementById("supplier-page-error");
+                    const newButton = document.getElementById("add-supplier-button");
+                    const actionButtons = document.querySelectorAll(".js-supplier-action");
+                    const formModalElement = document.getElementById("supplier-form-modal");
+                    const formModal = bootstrap.Modal.getOrCreateInstance(formModalElement);
+                    const detailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("supplier-details-modal"));
+                    const deleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("supplier-delete-modal"));
+                    const deleteForm = document.getElementById("supplier-delete-form");
+                    const deleteButton = document.getElementById("supplier-delete-button");
+                    let loading = false;
+                    let formMode = form.dataset.openMode === "edit" ? "edit" : "create";
+
+                    function setFormMode(mode) {
+                        formMode = mode;
+                        form.action = mode === "edit" ? form.dataset.editUrl : form.dataset.createUrl;
+                        title.textContent = mode === "edit" ? "Editar proveedor" : "Agregar proveedor";
+                        saveButton.textContent = mode === "edit" ? "Guardar cambios" : "Agregar";
+                        saveButton.disabled = false;
+                    }
+
+                    function clearFormErrors() {
+                        const summary = document.getElementById("supplier-validation");
+                        if (summary) {
+                            summary.classList.add("d-none");
+                        }
+                        form.querySelectorAll(".input-validation-error").forEach(function (element) {
+                            element.classList.remove("input-validation-error");
+                        });
+                        form.querySelectorAll("[data-valmsg-for]").forEach(function (element) {
+                            element.textContent = "";
+                            element.classList.remove("field-validation-error");
+                        });
+                    }
+
+                    function showPageError(message) {
+                        pageError.textContent = message;
+                        pageError.classList.remove("d-none");
+                        pageError.focus();
+                    }
+
+                    function setLoading(value) {
+                        loading = value;
+                        newButton.disabled = value;
+                        actionButtons.forEach(function (button) {
+                            button.disabled = value;
+                        });
+                    }
+
+                    async function loadSupplier(id) {
+                        let response;
+                        try {
+                            response = await fetch(form.dataset.detailsUrl + "?id=" + encodeURIComponent(id), {
+                                cache: "no-store",
+                                headers: { "Accept": "application/json" }
+                            });
+                        } catch (error) {
+                            throw new Error("No se pudo conectar con el sistema. Inténtelo de nuevo.");
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(response.status === 404
+                                ? "El proveedor ya no existe. Actualice la página."
+                                : "No se pudo consultar el proveedor. Inténtelo de nuevo.");
+                        }
+
+                        try {
+                            return await response.json();
+                        } catch (error) {
+                            throw new Error("No se pudo leer la información de el proveedor. Actualice la página.");
+                        }
+                    }
+
+                    newButton.addEventListener("click", function () {
+                        form.reset();
+                        idInput.value = "0";
+                        nameInput.value = "";
+                        contactInput.value = "";
+                        addressInput.value = "";
+                        activeInput.checked = true;
+                        phoneInput.value = "";
+                        emailInput.value = "";
+                        clearFormErrors();
+                        pageError.classList.add("d-none");
+                        setFormMode("create");
+                        formModal.show();
+                    });
+
+                    actionButtons.forEach(function (button) {
+                        button.addEventListener("click", async function () {
+                            if (loading) {
+                                return;
+                            }
+
+                            setLoading(true);
+                            pageError.classList.add("d-none");
+
+                            try {
+                                const supplier = await loadSupplier(button.dataset.supplierId);
+
+                                if (button.dataset.action === "edit") {
+                                    form.reset();
+                                    idInput.value = supplier.Id;
+                                    nameInput.value = supplier.Name;
+                                    contactInput.value = supplier.ContactName || "";
+                                    addressInput.value = supplier.Address || "";
+                                    activeInput.checked = supplier.IsActive === true;
+                                    phoneInput.value = supplier.Phone || "";
+                                    emailInput.value = supplier.Email || "";
+                                    clearFormErrors();
+                                    setFormMode("edit");
+                                    formModal.show();
+                                } else if (button.dataset.action === "details") {
+                                    document.getElementById("supplier-detail-id").textContent = supplier.Id;
+                                    document.getElementById("supplier-detail-name").textContent = supplier.Name;
+                                    document.getElementById("supplier-detail-contact-name").textContent = supplier.ContactName || "Sin contacto";
+                                    document.getElementById("supplier-detail-address").textContent = supplier.Address || "Sin dirección";
+                                    document.getElementById("supplier-detail-is-active").textContent = supplier.IsActive ? "Activo" : "Inactivo";
+                                    document.getElementById("supplier-detail-phone").textContent = supplier.Phone || "Sin teléfono";
+                                    document.getElementById("supplier-detail-email").textContent = supplier.Email || "Sin correo";
+                                    detailsModal.show();
+                                } else if (button.dataset.action === "delete") {
+                                    document.getElementById("supplier-delete-id").value = supplier.Id;
+                                    document.getElementById("supplier-delete-name").textContent = supplier.Name;
+                                    deleteButton.disabled = false;
+                                    deleteButton.textContent = "Eliminar";
+                                    deleteModal.show();
+                                }
+                            } catch (error) {
+                                showPageError(error.message);
+                            } finally {
+                                setLoading(false);
+                            }
+                        });
+                    });
+
+                    formModalElement.addEventListener("shown.bs.modal", function () {
+                        nameInput.focus();
+                    });
+
+                    form.addEventListener("submit", function () {
+                        saveButton.disabled = true;
+                        saveButton.textContent = "Guardando…";
+                    });
+
+                    deleteForm.addEventListener("submit", function () {
+                        deleteButton.disabled = true;
+                        deleteButton.textContent = "Eliminando…";
+                    });
+
+                    window.addEventListener("pageshow", function () {
+                        setFormMode(formMode);
+                        deleteButton.disabled = false;
+                        deleteButton.textContent = "Eliminar";
+                        setLoading(false);
+                    });
+
+                    setFormMode(formMode);
+                    if (form.dataset.openMode === "create" || form.dataset.openMode === "edit") {
+                        formModal.show();
+                    }
+                })();
+    </script>
+}

@@ -1,0 +1,334 @@
+﻿@model System.Collections.Generic.IEnumerable<PAP.DataAccess.Book>
+@using System.Linq
+@using System.Globalization
+@using PAP.DataAccess
+
+@{
+    ViewBag.Title = "Libros";
+    var books = (Model ?? Enumerable.Empty<Book>()).ToList();
+    var formBook = ViewBag.Form as Book ?? new Book();
+    string openModal = ViewBag.OpenModal as string;
+    bool editing = openModal == "edit";
+    string successMessage = TempData["Success"] as string;
+    string errorMessage = TempData["Error"] as string;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 mb-3">
+    <div><h1 class="h3 mb-1">Libros</h1><p class="text-muted mb-0">Administre el catálogo de libros.</p></div>
+    <button type="button" id="add-book-button" class="btn btn-primary">Agregar libro</button>
+</div>
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success" role="status">@successMessage</div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+<div id="book-page-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+<p class="text-muted">@books.Count @(books.Count == 1 ? "libro registrado" : "libros registrados")</p>
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <caption class="visually-hidden">Listado de libros y acciones disponibles.</caption>
+        <thead class="table-light"><tr>
+            <th scope="col">ID</th><th scope="col">Título</th><th scope="col">Precio</th>
+            <th scope="col">Categoría</th><th scope="col">Género</th><th scope="col">Editorial</th>
+            <th scope="col">Editar</th><th scope="col">Eliminar</th><th scope="col">Detalle</th>
+        </tr></thead>
+        <tbody>
+        @if (books.Count == 0)
+        {
+            <tr><td colspan="9" class="text-center text-muted py-4">No hay libros registrados. Puede agregar el primero con el botón superior.</td></tr>
+        }
+        else
+        {
+            foreach (var book in books)
+            {
+                <tr>
+                    <td>@book.Id</td><td class="text-break">@book.Title</td>
+                    <td class="text-nowrap">@book.Price.ToString("0.00", CultureInfo.InvariantCulture)</td>
+                    <td class="text-break">@(book.Category == null ? "Sin categoría" : book.Category.Name)</td>
+                    <td class="text-break">@(book.Genre == null ? "Sin género" : book.Genre.Name)</td>
+                    <td class="text-break">@(book.Publisher == null ? "Sin editorial" : book.Publisher.Name)</td>
+                    <td><button type="button" class="btn btn-sm btn-outline-primary js-book-action" data-action="edit" data-book-id="@book.Id" aria-label="Editar libro @book.Title">Editar</button></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger js-book-action" data-action="delete" data-book-id="@book.Id" aria-label="Eliminar libro @book.Title">Eliminar</button></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-secondary js-book-action" data-action="details" data-book-id="@book.Id" aria-label="Ver detalle del libro @book.Title">Detalle</button></td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="book-form-modal" tabindex="-1" aria-labelledby="book-form-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form class="modal-content" id="book-form" method="post"
+              action="@Url.Action(editing ? "Edit" : "Create", "Books")"
+              data-create-url="@Url.Action("Create", "Books")" data-edit-url="@Url.Action("Edit", "Books")"
+              data-details-url="@Url.Action("Details", "Books")" data-open-mode="@openModal">
+            @Html.AntiForgeryToken()
+            @Html.Hidden("Id", formBook.Id, new { id = "book-id" })
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="book-form-title">@(editing ? "Editar libro" : "Agregar libro")</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                @Html.ValidationSummary(false, "", new { @class = "text-danger", id = "book-validation", role = "alert" })
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="book-title" class="form-label">Título</label>
+                        @Html.TextBox("Title", formBook.Title, new { @class = "form-control", id = "book-title", maxlength = 200, required = "required" })
+                        @Html.ValidationMessage("Title", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="book-price" class="form-label">Precio</label>
+                        @Html.TextBox("Price", formBook.Price.ToString("0.00", CultureInfo.InvariantCulture), new { @class = "form-control", id = "book-price", type = "number", min = "0", max = "9999999999999999.99", step = "0.01", required = "required" })
+                        @Html.ValidationMessage("Price", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="book-publication-date" class="form-label">Publicación (opcional)</label>
+                        @Html.TextBox("PublicationDate", formBook.PublicationDate.HasValue ? formBook.PublicationDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "", new { @class = "form-control", id = "book-publication-date", type = "date" })
+                        @Html.ValidationMessage("PublicationDate", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="book-isbn" class="form-label">ISBN (opcional)</label>
+                        @Html.TextBox("ISBN", formBook.ISBN, new { @class = "form-control", id = "book-isbn", maxlength = 20 })
+                        @Html.ValidationMessage("ISBN", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="book-pages" class="form-label">Páginas (opcional)</label>
+                        @Html.TextBox("Pages", formBook.Pages, new { @class = "form-control", id = "book-pages", type = "number", min = "1", step = "1" })
+                        @Html.ValidationMessage("Pages", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="book-language" class="form-label">Idioma (opcional)</label>
+                        @Html.TextBox("Language", formBook.Language, new { @class = "form-control", id = "book-language", maxlength = 50 })
+                        @Html.ValidationMessage("Language", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="book-cover-url" class="form-label">URL de portada (opcional)</label>
+                        @Html.TextBox("CoverImageUrl", formBook.CoverImageUrl, new { @class = "form-control", id = "book-cover-url", maxlength = 500, type = "url", placeholder = "https://example.com/portada.jpg" })
+                        @Html.ValidationMessage("CoverImageUrl", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-12">
+                        <label for="book-description" class="form-label">Descripción (opcional)</label>
+                        @Html.TextArea("Description", formBook.Description, new { @class = "form-control", id = "book-description", rows = 3 })
+                        @Html.ValidationMessage("Description", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-4">
+                        <label for="book-category" class="form-label">Categoría (opcional)</label>
+                        @Html.DropDownList("CategoryId", (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.CategoryOptions,
+                            "Sin categoría", new { @class = "form-select", id = "book-category" })
+                        @Html.ValidationMessage("CategoryId", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-4">
+                        <label for="book-genre" class="form-label">Género (opcional)</label>
+                        @Html.DropDownList("GenreId", (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.GenreOptions,
+                            "Sin género", new { @class = "form-select", id = "book-genre" })
+                        @Html.ValidationMessage("GenreId", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-4">
+                        <label for="book-publisher" class="form-label">Editorial (opcional)</label>
+                        @Html.DropDownList("PublisherId", (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.PublisherOptions,
+                            "Sin editorial", new { @class = "form-select", id = "book-publisher" })
+                        @Html.ValidationMessage("PublisherId", "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">Título y precio son obligatorios. Las fechas de creación y actualización se asignan automáticamente y se muestran en UTC.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="book-save-button">@(editing ? "Guardar cambios" : "Agregar")</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="book-details-modal" tabindex="-1" aria-labelledby="book-details-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title fs-5" id="book-details-title">Detalle del libro</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body"><dl class="mb-0">
+            <dt>ID</dt><dd id="book-detail-id" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Título</dt><dd id="book-detail-title" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Precio</dt><dd id="book-detail-price" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Publicación</dt><dd id="book-detail-publication-date" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>ISBN</dt><dd id="book-detail-isbn" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Páginas</dt><dd id="book-detail-pages" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Idioma</dt><dd id="book-detail-language" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Categoría</dt><dd id="book-detail-category" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Género</dt><dd id="book-detail-genre" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Editorial</dt><dd id="book-detail-publisher" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Descripción</dt><dd id="book-detail-description" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>URL de portada</dt><dd id="book-detail-cover-url" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Creación (UTC)</dt><dd id="book-detail-created-at" class="text-break" style="white-space: pre-wrap;"></dd>
+            <dt>Actualización (UTC)</dt><dd id="book-detail-updated-at" class="text-break" style="white-space: pre-wrap;"></dd>
+        </dl></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="book-delete-modal" tabindex="-1" aria-labelledby="book-delete-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="book-delete-form" method="post" action="@Url.Action("Delete", "Books")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="book-delete-id" name="id" />
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="book-delete-title">Eliminar libro</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Desea eliminar el libro <strong id="book-delete-title-text" class="text-break"></strong>?</p>
+                <p class="text-muted mb-0">Los libros con registros asociados no se pueden eliminar.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger" id="book-delete-button">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+<script>
+(function () {
+    "use strict";
+    const form = document.getElementById("book-form");
+    const fieldIds = {
+        Title: "book-title", Price: "book-price", PublicationDate: "book-publication-date",
+        ISBN: "book-isbn", Pages: "book-pages", Language: "book-language",
+        CoverImageUrl: "book-cover-url", Description: "book-description",
+        CategoryId: "book-category", GenreId: "book-genre", PublisherId: "book-publisher"
+    };
+    const fields = {};
+    Object.keys(fieldIds).forEach(function (key) { fields[key] = document.getElementById(fieldIds[key]); });
+    const detailIds = {
+        Id: "book-detail-id",
+        Title: "book-detail-title",
+        Price: "book-detail-price",
+        PublicationDate: "book-detail-publication-date",
+        ISBN: "book-detail-isbn",
+        Pages: "book-detail-pages",
+        Language: "book-detail-language",
+        CategoryName: "book-detail-category",
+        GenreName: "book-detail-genre",
+        PublisherName: "book-detail-publisher",
+        Description: "book-detail-description",
+        CoverImageUrl: "book-detail-cover-url",
+        CreatedAt: "book-detail-created-at",
+        UpdatedAt: "book-detail-updated-at"
+    };
+    const idInput = document.getElementById("book-id");
+    const title = document.getElementById("book-form-title");
+    const saveButton = document.getElementById("book-save-button");
+    const pageError = document.getElementById("book-page-error");
+    const newButton = document.getElementById("add-book-button");
+    const actionButtons = document.querySelectorAll(".js-book-action");
+    const formElement = document.getElementById("book-form-modal");
+    const formModal = bootstrap.Modal.getOrCreateInstance(formElement);
+    const detailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("book-details-modal"));
+    const deleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("book-delete-modal"));
+    const deleteForm = document.getElementById("book-delete-form");
+    const deleteButton = document.getElementById("book-delete-button");
+    let loading = false;
+    let formMode = form.dataset.openMode === "edit" ? "edit" : "create";
+
+    function setMode(mode) {
+        formMode = mode;
+        form.action = mode === "edit" ? form.dataset.editUrl : form.dataset.createUrl;
+        title.textContent = mode === "edit" ? "Editar libro" : "Agregar libro";
+        saveButton.textContent = mode === "edit" ? "Guardar cambios" : "Agregar";
+        saveButton.disabled = false;
+    }
+    function clearErrors() {
+        const summary = document.getElementById("book-validation");
+        if (summary) summary.classList.add("d-none");
+        form.querySelectorAll(".input-validation-error").forEach(function (element) {
+            element.classList.remove("input-validation-error");
+        });
+        form.querySelectorAll("[data-valmsg-for]").forEach(function (element) {
+            element.textContent = "";
+            element.classList.remove("field-validation-error");
+        });
+    }
+    function setLoading(value) {
+        loading = value;
+        newButton.disabled = value;
+        actionButtons.forEach(function (button) { button.disabled = value; });
+    }
+    async function loadBook(id) {
+        let response;
+        try {
+            response = await fetch(form.dataset.detailsUrl + "?id=" + encodeURIComponent(id), {
+                cache: "no-store", headers: { "Accept": "application/json" }
+            });
+        } catch (error) {
+            throw new Error("No se pudo conectar con el sistema. Inténtelo de nuevo.");
+        }
+        if (!response.ok) throw new Error(response.status === 404
+            ? "El libro ya no existe. Actualice la página." : "No se pudo consultar el libro.");
+        try { return await response.json(); }
+        catch (error) { throw new Error("No se pudo leer la información del libro. Actualice la página."); }
+    }
+    newButton.addEventListener("click", function () {
+        form.reset();
+        idInput.value = "0";
+        Object.keys(fields).forEach(function (key) { fields[key].value = key === "Price" ? "0.00" : ""; });
+        clearErrors();
+        pageError.classList.add("d-none");
+        setMode("create");
+        formModal.show();
+    });
+    actionButtons.forEach(function (button) {
+        button.addEventListener("click", async function () {
+            if (loading) return;
+            setLoading(true);
+            pageError.classList.add("d-none");
+            try {
+                const book = await loadBook(button.dataset.bookId);
+                if (button.dataset.action === "edit") {
+                    form.reset();
+                    idInput.value = book.Id;
+                    Object.keys(fields).forEach(function (key) {
+                        fields[key].value = book[key] == null ? "" : book[key];
+                    });
+                    clearErrors();
+                    setMode("edit");
+                    formModal.show();
+                } else if (button.dataset.action === "details") {
+                    Object.keys(detailIds).forEach(function (key) {
+                        let value = book[key];
+                        if (key === "PublicationDate" && value) value = value.split("-").reverse().join("/");
+                        document.getElementById(detailIds[key]).textContent = value == null || value === "" ? "Sin especificar" : value;
+                    });
+                    detailsModal.show();
+                } else if (button.dataset.action === "delete") {
+                    document.getElementById("book-delete-id").value = book.Id;
+                    document.getElementById("book-delete-title-text").textContent = book.Title;
+                    deleteButton.disabled = false;
+                    deleteButton.textContent = "Eliminar";
+                    deleteModal.show();
+                }
+            } catch (error) {
+                pageError.textContent = error.message;
+                pageError.classList.remove("d-none");
+                pageError.focus();
+            } finally { setLoading(false); }
+        });
+    });
+    formElement.addEventListener("shown.bs.modal", function () { fields.Title.focus(); });
+    form.addEventListener("submit", function () { saveButton.disabled = true; saveButton.textContent = "Guardando…"; });
+    deleteForm.addEventListener("submit", function () { deleteButton.disabled = true; deleteButton.textContent = "Eliminando…"; });
+    window.addEventListener("pageshow", function () {
+        setMode(formMode);
+        deleteButton.disabled = false;
+        deleteButton.textContent = "Eliminar";
+        setLoading(false);
+    });
+    setMode(formMode);
+    if (form.dataset.openMode === "create" || form.dataset.openMode === "edit") formModal.show();
+})();
+</script>
+}
