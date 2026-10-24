@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="PAP.Business/PAP.Business.csproj" />
-  <Project Path="PAP.DataAccess/PAP.DataAccess.csproj" />
-  <Project Path="PAP.Generators/PAP.Generators.csproj" />
-  <Project Path="PAP.Mvc/PAP.Mvc.csproj" />
-  <Project Path="PAP.Repositories/PAP.Repositories.csproj" />
+  <Project Path="PAP.Business/PAP.Business.csproj" Id="31a06447-8d63-446e-b41c-cd2531aebee1" />
+  <Project Path="PAP.DataAccess/PAP.DataAccess.csproj" Id="ac752ded-44f3-4802-86b1-a6d6f5cbc89b" />
+  <Project Path="PAP.Generators/PAP.Generators.csproj" Id="ea141e23-db75-427d-b57a-14c9ca39cd41" />
+  <Project Path="PAP.Mvc/PAP.Mvc.csproj" Id="059fcf4c-3e22-4f47-bdf9-bc0132296e26" />
+  <Project Path="PAP.Repositories/PAP.Repositories.csproj" Id="9702129d-22fc-4555-850b-ea0e95b2186d" />
 </Solution>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -34,35 +34,35 @@ namespace PAP.Generators
         // con sus relaciones. Tambien se comprueban al recibir cada POST.
         private static readonly EntityDefinition[] Definitions =
         {
-            new EntityDefinition("Addresses", "Direcciones", c => c.Addresses.Any(), new[] { "Customers" }),
+            new EntityDefinition("Addresses", "Direcciones", c => c.Addresses.Any(), new[] { "Customers" }, new AddressesGenerator().GenerateRecords),
             new EntityDefinition("Authors", "Autores", c => c.Authors.Any(), new string[0],
                 new AuthorsGenerator().GenerateRecords),
             new EntityDefinition("BookAuthors", "Libros y autores", c => c.Books.Any(b => b.Authors.Any()),
-                new[] { "Books", "Authors" }),
+                new[] { "Books", "Authors" }, new BookAuthorsGenerator().GenerateRecords),
             new EntityDefinition("Books", "Libros", c => c.Books.Any(),
-                new[] { "Categories", "Genres", "Publishers" }),
+                new[] { "Categories", "Genres", "Publishers" }, new BooksGenerator().GenerateRecords),
             new EntityDefinition("CartItems", "Artículos del carrito", c => c.CartItems.Any(),
-                new[] { "ShoppingCarts", "Books" }),
+                new[] { "ShoppingCarts", "Books" }, new CartItemsGenerator().GenerateRecords),
             new EntityDefinition("Categories", "Categorías", c => c.Categories.Any(), new string[0],
                 new CategoriesGenerator().GenerateRecords),
-            new EntityDefinition("Customers", "Clientes", c => c.Customers.Any(), new string[0]),
-            new EntityDefinition("Employees", "Empleados", c => c.Employees.Any(), new[] { "Roles" }),
+            new EntityDefinition("Customers", "Clientes", c => c.Customers.Any(), new string[0], new CustomersGenerator().GenerateRecords),
+            new EntityDefinition("Employees", "Empleados", c => c.Employees.Any(), new[] { "Roles" }, new EmployeesGenerator().GenerateRecords),
             new EntityDefinition("Genres", "Géneros", c => c.Genres.Any(), new string[0],
                 new GenresGenerator().GenerateRecords),
-            new EntityDefinition("Inventory", "Inventario", c => c.Inventories.Any(), new[] { "Books" }),
+            new EntityDefinition("Inventory", "Inventario", c => c.Inventories.Any(), new[] { "Books" }, new InventoryGenerator().GenerateRecords),
             new EntityDefinition("OrderItems", "Detalles de pedidos", c => c.OrderItems.Any(),
-                new[] { "Orders", "Books" }),
-            new EntityDefinition("Orders", "Pedidos", c => c.Orders.Any(), new[] { "Customers", "Addresses" }),
-            new EntityDefinition("Payments", "Pagos", c => c.Payments.Any(), new[] { "Orders" }),
+                new[] { "Orders", "Books" }, new OrderItemsGenerator().GenerateRecords),
+            new EntityDefinition("Orders", "Pedidos", c => c.Orders.Any(), new[] { "Customers", "Addresses" }, new OrdersGenerator().GenerateRecords),
+            new EntityDefinition("Payments", "Pagos", c => c.Payments.Any(), new[] { "Orders", "OrderItems" }, new PaymentsGenerator().GenerateRecords),
             new EntityDefinition("Publishers", "Editoriales", c => c.Publishers.Any(), new string[0],
                 new PublishersGenerator().GenerateRecords),
             new EntityDefinition("PurchaseOrderItems", "Detalles de compras", c => c.PurchaseOrderItems.Any(),
-                new[] { "PurchaseOrders", "Books" }),
+                new[] { "PurchaseOrders", "Books" }, new PurchaseOrderItemsGenerator().GenerateRecords),
             new EntityDefinition("PurchaseOrders", "Órdenes de compra", c => c.PurchaseOrders.Any(),
-                new[] { "Suppliers" }),
-            new EntityDefinition("Reviews", "Reseñas", c => c.Reviews.Any(), new[] { "Books", "Customers" }),
-            new EntityDefinition("Roles", "Roles", c => c.Roles.Any(), new string[0]),
-            new EntityDefinition("ShoppingCarts", "Carritos", c => c.ShoppingCarts.Any(), new[] { "Customers" }),
+                new[] { "Suppliers" }, new PurchaseOrdersGenerator().GenerateRecords),
+            new EntityDefinition("Reviews", "Reseñas", c => c.Reviews.Any(), new[] { "Books", "Customers" }, new ReviewsGenerator().GenerateRecords),
+            new EntityDefinition("Roles", "Roles", c => c.Roles.Any(), new string[0], new RolesGenerator().GenerateRecords),
+            new EntityDefinition("ShoppingCarts", "Carritos", c => c.ShoppingCarts.Any(), new[] { "Customers" }, new ShoppingCartsGenerator().GenerateRecords),
             new EntityDefinition("Suppliers", "Proveedores", c => c.Suppliers.Any(), new string[0],
                 new SuppliersGenerator().GenerateRecords)
         };

@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -77,4 +77,23 @@
     <Error Condition="!Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.2\build\EntityFramework.targets'))" />
   </Target>
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" />
+  <ItemGroup>
+    <Compile Include="AddressRepository.cs" />
+    <Compile Include="BookAuthorLink.cs" />
+    <Compile Include="BookAuthorRepository.cs" />
+    <Compile Include="BookRepository.cs" />
+    <Compile Include="CartItemRepository.cs" />
+    <Compile Include="CustomerRepository.cs" />
+    <Compile Include="EmployeeRepository.cs" />
+    <Compile Include="EntityRepository.cs" />
+    <Compile Include="InventoryRepository.cs" />
+    <Compile Include="OrderItemRepository.cs" />
+    <Compile Include="OrderRepository.cs" />
+    <Compile Include="PaymentRepository.cs" />
+    <Compile Include="PurchaseOrderItemRepository.cs" />
+    <Compile Include="PurchaseOrderRepository.cs" />
+    <Compile Include="ReviewRepository.cs" />
+    <Compile Include="RoleRepository.cs" />
+    <Compile Include="ShoppingCartRepository.cs" />
+  </ItemGroup>
 </Project>
