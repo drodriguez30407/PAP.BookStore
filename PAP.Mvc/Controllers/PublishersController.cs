@@ -78,7 +78,7 @@ namespace PAP.Mvc.Controllers
             {
                 Trace.TraceError("Error al agregar una editorial: {0}", error);
                 ModelState.AddModelError("",
-                    "No se pudo guardar la editorial. Actualice la página e inténtelo de nuevo.");
+                    "No se pudo guardar la editorial. Actualice la página e inténtelo de nuevo...");
             }
 
             return ShowIndex(publisher, "create");
@@ -117,7 +117,7 @@ namespace PAP.Mvc.Controllers
             {
                 Trace.TraceError("Error al editar una editorial: {0}", error);
                 ModelState.AddModelError("",
-                    "No se pudieron guardar los cambios. Actualice la página e inténtelo de nuevo.");
+                    "No se pudieron guardar los cambios. Actualice la página e inténtelo de nuevo...");
             }
 
             return ShowIndex(publisher, "edit");
@@ -154,7 +154,7 @@ namespace PAP.Mvc.Controllers
             {
                 Trace.TraceError("Error al eliminar una editorial: {0}", error);
                 TempData["Error"] =
-                    "No se pudo eliminar la editorial. Actualice la página e inténtelo de nuevo.";
+                    "No se pudo eliminar la editorial. Actualice la página e inténtelo de nuevo...";
             }
 
             return RedirectToAction("Index");

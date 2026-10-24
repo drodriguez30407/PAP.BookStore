@@ -73,7 +73,7 @@ namespace PAP.Mvc.Controllers
             {
                 Trace.TraceError("Error al agregar un género: {0}", error);
                 ModelState.AddModelError("",
-                    "No se pudo guardar el género. Actualice la página e inténtelo de nuevo.");
+                    "No se pudo guardar el género. Actualice e inténtelo de nuevo.");
             }
 
             return ShowIndex(genre, "create");
@@ -112,7 +112,7 @@ namespace PAP.Mvc.Controllers
             {
                 Trace.TraceError("Error al editar un género: {0}", error);
                 ModelState.AddModelError("",
-                    "No se pudieron guardar los cambios. Actualice la página e inténtelo de nuevo.");
+                    "No se pudieron guardar los cambios. Actualice e inténtelo de nuevo...");
             }
 
             return ShowIndex(genre, "edit");
@@ -149,7 +149,7 @@ namespace PAP.Mvc.Controllers
             {
                 Trace.TraceError("Error al eliminar un género: {0}", error);
                 TempData["Error"] =
-                    "No se pudo eliminar el género. Actualice la página e inténtelo de nuevo.";
+                    "No se pudo eliminar el género. Actualice e inténtelo de nuevo...";
             }
 
             return RedirectToAction("Index");

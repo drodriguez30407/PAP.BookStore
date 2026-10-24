@@ -1,0 +1,439 @@
+﻿@model System.Collections.Generic.IEnumerable<PAP.DataAccess.Author>
+@using System.Linq
+@using System.Globalization
+@using PAP.DataAccess
+
+@{
+    ViewBag.Title = "Autores";
+    var authors = (Model ?? Enumerable.Empty<Author>()).ToList();
+    var formAuthor = ViewBag.Form as Author ?? new Author();
+    string formBirthDate = formAuthor.BirthDate.HasValue
+        ? formAuthor.BirthDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        : "";
+    string openModal = ViewBag.OpenModal as string;
+    bool editing = openModal == "edit";
+    string successMessage = TempData["Success"] as string;
+    string errorMessage = TempData["Error"] as string;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Autores</h1>
+        <p class="text-muted mb-0">Administre los autores de los libros.</p>
+    </div>
+    <button type="button" id="add-author-button" class="btn btn-primary">
+        Agregar autor
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success" role="status">@successMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<div id="author-page-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+
+<p class="text-muted">
+    @authors.Count @(authors.Count == 1 ? "autor registrado" : "autores registrados")
+</p>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <caption class="visually-hidden">Listado de autores y acciones disponibles.</caption>
+        <thead class="table-light">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">Biografía</th>
+                <th scope="col">Nacimiento</th>
+                <th scope="col">País</th>
+                <th scope="col">Creación (UTC)</th>
+                <th scope="col">Editar</th>
+                <th scope="col">Eliminar</th>
+                <th scope="col">Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (authors.Count == 0)
+            {
+                <tr>
+                    <td colspan="10" class="text-center text-muted py-4">
+                        No hay autores registrados. Puede agregar el primero con el botón superior.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                foreach (var author in authors)
+                {
+                    <tr>
+                        <td>@author.Id</td>
+                        <td class="text-break">@author.FirstName</td>
+                        <td class="text-break">@author.LastName</td>
+                        <td>
+                            <span class="d-block text-truncate" style="max-width: 16rem;">@(string.IsNullOrWhiteSpace(author.Biography) ? "Sin biografía" : author.Biography)</span>
+                        </td>
+                        <td class="text-nowrap">@(author.BirthDate.HasValue ? author.BirthDate.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : "Sin especificar")</td>
+                        <td class="text-break">@(string.IsNullOrWhiteSpace(author.Country) ? "Sin especificar" : author.Country)</td>
+                        <td class="text-nowrap">@author.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary js-author-action"
+                                    data-action="edit" data-author-id="@author.Id"
+                                    aria-label="Editar autor @author.FirstName @author.LastName">
+                                Editar
+                            </button>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-danger js-author-action"
+                                    data-action="delete" data-author-id="@author.Id"
+                                    aria-label="Eliminar autor @author.FirstName @author.LastName">
+                                Eliminar
+                            </button>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-secondary js-author-action"
+                                    data-action="details" data-author-id="@author.Id"
+                                    aria-label="Ver detalle del autor @author.FirstName @author.LastName">
+                                Detalle
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="author-form-modal" tabindex="-1"
+     aria-labelledby="author-form-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form class="modal-content" id="author-form" method="post"
+              action="@Url.Action(editing ? "Edit" : "Create", "Authors")"
+              data-create-url="@Url.Action("Create", "Authors")"
+              data-edit-url="@Url.Action("Edit", "Authors")"
+              data-details-url="@Url.Action("Details", "Authors")"
+              data-open-mode="@openModal">
+            @Html.AntiForgeryToken()
+            @Html.Hidden("Id", formAuthor.Id, new { id = "author-id" })
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="author-form-title">@(editing ? "Editar autor" : "Agregar autor")</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                @Html.ValidationSummary(false, "", new { @class = "text-danger", id = "author-validation", role = "alert" })
+
+                <div class="mb-3">
+                    <label for="author-first-name" class="form-label">Nombre</label>
+                    @Html.TextBox("FirstName", formAuthor.FirstName, new
+                    {
+                        @class = "form-control",
+                        id = "author-first-name",
+                        maxlength = 100,
+                        required = "required",
+                        aria_describedby = "author-first-name-help"
+                    })
+                    <div id="author-first-name-help" class="form-text">Máximo 100 caracteres.</div>
+                    @Html.ValidationMessage("FirstName", "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label for="author-last-name" class="form-label">Apellido</label>
+                    @Html.TextBox("LastName", formAuthor.LastName, new
+                    {
+                        @class = "form-control",
+                        id = "author-last-name",
+                        maxlength = 100,
+                        required = "required",
+                        aria_describedby = "author-last-name-help"
+                    })
+                    <div id="author-last-name-help" class="form-text">Máximo 100 caracteres.</div>
+                    @Html.ValidationMessage("LastName", "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label for="author-country" class="form-label">País (opcional)</label>
+                    @Html.TextBox("Country", formAuthor.Country, new
+                    {
+                        @class = "form-control",
+                        id = "author-country",
+                        maxlength = 100,
+                        aria_describedby = "author-country-help"
+                    })
+                    <div id="author-country-help" class="form-text">Máximo 100 caracteres.</div>
+                    @Html.ValidationMessage("Country", "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label for="author-birth-date" class="form-label">Fecha de nacimiento (opcional)</label>
+                    @Html.TextBox("BirthDate", formBirthDate, new
+                    {
+                        @class = "form-control",
+                        id = "author-birth-date",
+                        type = "date",
+                        max = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        aria_describedby = "author-birth-date-help"
+                    })
+                    <div id="author-birth-date-help" class="form-text">Puede dejarla vacía. La fecha no puede ser futura.</div>
+                    @Html.ValidationMessage("BirthDate", "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label for="author-biography" class="form-label">Biografía (opcional)</label>
+                    @Html.TextArea("Biography", formAuthor.Biography, new
+                    {
+                        @class = "form-control",
+                        id = "author-biography",
+                        rows = 5
+                    })
+                    @Html.ValidationMessage("Biography", "", new { @class = "text-danger" })
+                </div>
+
+                <p class="text-muted small mb-0">La fecha de creación se asigna automáticamente y se muestra en UTC.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="author-save-button">@(editing ? "Guardar cambios" : "Agregar")</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="author-details-modal" tabindex="-1"
+     aria-labelledby="author-details-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="author-details-title">Detalle del autor</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="mb-0">
+                    <dt>ID</dt>
+                    <dd id="author-detail-id"></dd>
+                    <dt>Nombre</dt>
+                    <dd id="author-detail-first-name" class="text-break"></dd>
+                    <dt>Apellido</dt>
+                    <dd id="author-detail-last-name" class="text-break"></dd>
+                    <dt>Biografía</dt>
+                    <dd id="author-detail-biography" class="text-break" style="white-space: pre-wrap;"></dd>
+                    <dt>Fecha de nacimiento</dt>
+                    <dd id="author-detail-birth-date"></dd>
+                    <dt>País</dt>
+                    <dd id="author-detail-country" class="text-break"></dd>
+                    <dt>Fecha de creación (UTC)</dt>
+                    <dd id="author-detail-created-at"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="author-delete-modal" tabindex="-1"
+     aria-labelledby="author-delete-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="author-delete-form" method="post"
+              action="@Url.Action("Delete", "Authors")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="author-delete-id" name="id" />
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="author-delete-title">Eliminar autor</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Desea eliminar el autor <strong id="author-delete-name" class="text-break"></strong>?</p>
+                <p class="text-muted mb-0">Los autores que tengan libros asociados no se pueden eliminar.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger" id="author-delete-button">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+                (function () {
+                    "use strict";
+
+                    const form = document.getElementById("author-form");
+                    const firstNameInput = document.getElementById("author-first-name");
+                    const lastNameInput = document.getElementById("author-last-name");
+                    const countryInput = document.getElementById("author-country");
+                    const birthDateInput = document.getElementById("author-birth-date");
+                    const biographyInput = document.getElementById("author-biography");
+                    const idInput = document.getElementById("author-id");
+                    const title = document.getElementById("author-form-title");
+                    const saveButton = document.getElementById("author-save-button");
+                    const pageError = document.getElementById("author-page-error");
+                    const newButton = document.getElementById("add-author-button");
+                    const actionButtons = document.querySelectorAll(".js-author-action");
+                    const formModalElement = document.getElementById("author-form-modal");
+                    const formModal = bootstrap.Modal.getOrCreateInstance(formModalElement);
+                    const detailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("author-details-modal"));
+                    const deleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("author-delete-modal"));
+                    const deleteForm = document.getElementById("author-delete-form");
+                    const deleteButton = document.getElementById("author-delete-button");
+                    let loading = false;
+                    let formMode = form.dataset.openMode === "edit" ? "edit" : "create";
+
+                    function setFormMode(mode) {
+                        formMode = mode;
+                        form.action = mode === "edit" ? form.dataset.editUrl : form.dataset.createUrl;
+                        title.textContent = mode === "edit" ? "Editar autor" : "Agregar autor";
+                        saveButton.textContent = mode === "edit" ? "Guardar cambios" : "Agregar";
+                        saveButton.disabled = false;
+                    }
+
+                    function clearFormErrors() {
+                        const summary = document.getElementById("author-validation");
+                        if (summary) {
+                            summary.classList.add("d-none");
+                        }
+                        form.querySelectorAll(".input-validation-error").forEach(function (element) {
+                            element.classList.remove("input-validation-error");
+                        });
+                        form.querySelectorAll("[data-valmsg-for]").forEach(function (element) {
+                            element.textContent = "";
+                            element.classList.remove("field-validation-error");
+                        });
+                    }
+
+                    function showPageError(message) {
+                        pageError.textContent = message;
+                        pageError.classList.remove("d-none");
+                        pageError.focus();
+                    }
+
+                    function setLoading(value) {
+                        loading = value;
+                        newButton.disabled = value;
+                        actionButtons.forEach(function (button) {
+                            button.disabled = value;
+                        });
+                    }
+
+                    async function loadAuthor(id) {
+                        let response;
+                        try {
+                            response = await fetch(form.dataset.detailsUrl + "?id=" + encodeURIComponent(id), {
+                                cache: "no-store",
+                                headers: { "Accept": "application/json" }
+                            });
+                        } catch (error) {
+                            throw new Error("No se pudo conectar con el sistema. Inténtelo de nuevo.");
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(response.status === 404
+                                ? "El autor ya no existe. Actualice la página."
+                                : "No se pudo consultar el autor. Inténtelo de nuevo.");
+                        }
+
+                        try {
+                            return await response.json();
+                        } catch (error) {
+                            throw new Error("No se pudo leer la información del autor. Actualice la página.");
+                        }
+                    }
+
+                    newButton.addEventListener("click", function () {
+                        form.reset();
+                        idInput.value = "0";
+                        firstNameInput.value = "";
+                        lastNameInput.value = "";
+                        countryInput.value = "";
+                        birthDateInput.value = "";
+                        biographyInput.value = "";
+                        clearFormErrors();
+                        pageError.classList.add("d-none");
+                        setFormMode("create");
+                        formModal.show();
+                    });
+
+                    actionButtons.forEach(function (button) {
+                        button.addEventListener("click", async function () {
+                            if (loading) {
+                                return;
+                            }
+
+                            setLoading(true);
+                            pageError.classList.add("d-none");
+
+                            try {
+                                const author = await loadAuthor(button.dataset.authorId);
+
+                                if (button.dataset.action === "edit") {
+                                    form.reset();
+                                    idInput.value = author.Id;
+                                    firstNameInput.value = author.FirstName;
+                                    lastNameInput.value = author.LastName;
+                                    countryInput.value = author.Country || "";
+                                    birthDateInput.value = author.BirthDate || "";
+                                    biographyInput.value = author.Biography || "";
+                                    clearFormErrors();
+                                    setFormMode("edit");
+                                    formModal.show();
+                                } else if (button.dataset.action === "details") {
+                                    document.getElementById("author-detail-id").textContent = author.Id;
+                                    document.getElementById("author-detail-first-name").textContent = author.FirstName;
+                                    document.getElementById("author-detail-last-name").textContent = author.LastName;
+                                    document.getElementById("author-detail-biography").textContent = author.Biography || "Sin biografía";
+                                    document.getElementById("author-detail-birth-date").textContent = author.BirthDate
+                                        ? author.BirthDate.split("-").reverse().join("/")
+                                        : "Sin especificar";
+                                    document.getElementById("author-detail-country").textContent = author.Country || "Sin especificar";
+                                    document.getElementById("author-detail-created-at").textContent = author.CreatedAt;
+                                    detailsModal.show();
+                                } else if (button.dataset.action === "delete") {
+                                    document.getElementById("author-delete-id").value = author.Id;
+                                    document.getElementById("author-delete-name").textContent = author.FirstName + " " + author.LastName;
+                                    deleteButton.disabled = false;
+                                    deleteButton.textContent = "Eliminar";
+                                    deleteModal.show();
+                                }
+                            } catch (error) {
+                                showPageError(error.message);
+                            } finally {
+                                setLoading(false);
+                            }
+                        });
+                    });
+
+                    formModalElement.addEventListener("shown.bs.modal", function () {
+                        firstNameInput.focus();
+                    });
+
+                    form.addEventListener("submit", function () {
+                        saveButton.disabled = true;
+                        saveButton.textContent = "Guardando…";
+                    });
+
+                    deleteForm.addEventListener("submit", function () {
+                        deleteButton.disabled = true;
+                        deleteButton.textContent = "Eliminando…";
+                    });
+
+                    window.addEventListener("pageshow", function () {
+                        setFormMode(formMode);
+                        deleteButton.disabled = false;
+                        deleteButton.textContent = "Eliminar";
+                        setLoading(false);
+                    });
+
+                    setFormMode(formMode);
+                    if (form.dataset.openMode === "create" || form.dataset.openMode === "edit") {
+                        formModal.show();
+                    }
+                })();
+    </script>
+}
