@@ -1,0 +1,330 @@
+﻿@model System.Collections.Generic.IEnumerable<PAP.DataAccess.Customer>
+@using System.Linq
+@using System.Globalization
+@using PAP.DataAccess
+
+@{
+    ViewBag.Title = "Clientes";
+    var customers = (Model ?? Enumerable.Empty<Customer>()).ToList();
+    var formCustomer = ViewBag.Form as Customer ?? new Customer { IsActive = true };
+    string openModal = ViewBag.OpenModal as string;
+    bool editing = openModal == "edit";
+    string successMessage = TempData["Success"] as string;
+    string errorMessage = TempData["Error"] as string;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 mb-3">
+    <div><h1 class="h3 mb-1">Clientes</h1><p class="text-muted mb-0">Administre los clientes de la librería.</p></div>
+    <button type="button" id="add-customer-button" class="btn btn-primary">Agregar cliente</button>
+</div>
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success" role="status">@successMessage</div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+<div id="customer-page-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+<p class="text-muted">@customers.Count @(customers.Count == 1 ? "cliente registrado" : "clientes registrados")</p>
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <caption class="visually-hidden">Listado de clientes y acciones disponibles.</caption>
+        <thead class="table-light"><tr>
+            <th scope="col">ID</th><th scope="col">Nombre</th><th scope="col">Apellidos</th>
+            <th scope="col">Correo</th><th scope="col">Teléfono</th><th scope="col">Estado</th>
+            <th scope="col">Editar</th><th scope="col">Eliminar</th><th scope="col">Detalle</th>
+        </tr></thead>
+        <tbody>
+        @if (customers.Count == 0)
+        {
+            <tr><td colspan="9" class="text-center text-muted py-4">No hay clientes registrados. Puede agregar el primero con el botón superior.</td></tr>
+        }
+        else
+        {
+            foreach (var customer in customers)
+            {
+                <tr>
+                    <td>@customer.Id</td><td class="text-break">@customer.FirstName</td><td class="text-break">@customer.LastName</td>
+                    <td class="text-break">@customer.Email</td>
+                    <td class="text-break">@(string.IsNullOrWhiteSpace(customer.Phone) ? "Sin teléfono" : customer.Phone)</td>
+                    <td><span class="badge @(customer.IsActive ? "bg-success" : "bg-secondary")">@(customer.IsActive ? "Activo" : "Inactivo")</span></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-primary js-customer-action" data-action="edit" data-customer-id="@customer.Id" aria-label="Editar cliente @customer.FirstName @customer.LastName">Editar</button></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger js-customer-action" data-action="delete" data-customer-id="@customer.Id" aria-label="Eliminar cliente @customer.FirstName @customer.LastName">Eliminar</button></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-secondary js-customer-action" data-action="details" data-customer-id="@customer.Id" aria-label="Ver detalle del cliente @customer.FirstName @customer.LastName">Detalle</button></td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="customer-form-modal" tabindex="-1" aria-labelledby="customer-form-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form class="modal-content" id="customer-form" method="post"
+              action="@Url.Action(editing ? "Edit" : "Create", "Customers")"
+              data-create-url="@Url.Action("Create", "Customers")" data-edit-url="@Url.Action("Edit", "Customers")"
+              data-details-url="@Url.Action("Details", "Customers")" data-open-mode="@openModal">
+            @Html.AntiForgeryToken()
+            @Html.Hidden("Id", formCustomer.Id, new { id = "customer-id" })
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="customer-form-title">@(editing ? "Editar cliente" : "Agregar cliente")</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                @Html.ValidationSummary(false, "", new { @class = "text-danger", id = "customer-validation", role = "alert" })
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="customer-first-name" class="form-label">Nombre</label>
+                        @Html.TextBox("FirstName", formCustomer.FirstName, new { @class = "form-control", id = "customer-first-name", maxlength = 100, required = "required" })
+                        @Html.ValidationMessage("FirstName", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customer-last-name" class="form-label">Apellidos</label>
+                        @Html.TextBox("LastName", formCustomer.LastName, new { @class = "form-control", id = "customer-last-name", maxlength = 100, required = "required" })
+                        @Html.ValidationMessage("LastName", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customer-email" class="form-label">Correo electrónico</label>
+                        @Html.TextBox("Email", formCustomer.Email, new { @class = "form-control", id = "customer-email", type = "email", maxlength = 150, required = "required" })
+                        @Html.ValidationMessage("Email", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customer-phone" class="form-label">Teléfono (opcional)</label>
+                        @Html.TextBox("Phone", formCustomer.Phone, new { @class = "form-control", id = "customer-phone", type = "tel", maxlength = 30 })
+                        @Html.ValidationMessage("Phone", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customer-birth-date" class="form-label">Nacimiento (opcional)</label>
+                        @Html.TextBox("BirthDate", formCustomer.BirthDate.HasValue ? formCustomer.BirthDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "", new { @class = "form-control", id = "customer-birth-date", type = "date", max = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) })
+                        @Html.ValidationMessage("BirthDate", "", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check mt-4">
+                            @Html.CheckBox("IsActive", formCustomer.IsActive, new { @class = "form-check-input", id = "customer-is-active" })
+                            <label for="customer-is-active" class="form-check-label">Activo</label>
+                            @Html.ValidationMessage("IsActive", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customer-password" class="form-label">Contraseña</label>
+                        <input type="password" name="password" id="customer-password" class="form-control" minlength="15" maxlength="128" autocomplete="new-password" aria-describedby="customer-password-help" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customer-confirm-password" class="form-label">Confirmar contraseña</label>
+                        <input type="password" name="confirmPassword" id="customer-confirm-password" class="form-control" minlength="15" maxlength="128" autocomplete="new-password" aria-describedby="customer-password-help" />
+                    </div>
+                    <div class="col-12"><p id="customer-password-help" class="form-text mb-0">@(editing ? "Deje ambos campos vacíos para conservar la contraseña actual." : "La contraseña debe tener entre 15 y 128 caracteres.")</p></div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">Si el formulario muestra un error, vuelva a escribir la contraseña que desee establecer. Las fechas de creación y actualización se muestran en UTC.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="customer-save-button">@(editing ? "Guardar cambios" : "Agregar")</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="customer-details-modal" tabindex="-1" aria-labelledby="customer-details-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title fs-5" id="customer-details-title">Detalle del cliente</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body"><dl class="mb-0">
+            <dt>ID</dt><dd id="customer-detail-id" class="text-break"></dd>
+            <dt>Nombre</dt><dd id="customer-detail-first-name" class="text-break"></dd>
+            <dt>Apellidos</dt><dd id="customer-detail-last-name" class="text-break"></dd>
+            <dt>Correo electrónico</dt><dd id="customer-detail-email" class="text-break"></dd>
+            <dt>Teléfono</dt><dd id="customer-detail-phone" class="text-break"></dd>
+            <dt>Nacimiento</dt><dd id="customer-detail-birth-date" class="text-break"></dd>
+            <dt>Estado</dt><dd id="customer-detail-is-active" class="text-break"></dd>
+            <dt>Creación (UTC)</dt><dd id="customer-detail-created-at" class="text-break"></dd>
+            <dt>Actualización (UTC)</dt><dd id="customer-detail-updated-at" class="text-break"></dd>
+        </dl></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="customer-delete-modal" tabindex="-1" aria-labelledby="customer-delete-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="customer-delete-form" method="post" action="@Url.Action("Delete", "Customers")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="customer-delete-id" name="id" />
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="customer-delete-title">Eliminar cliente</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Desea eliminar al cliente <strong id="customer-delete-name" class="text-break"></strong>?</p>
+                <p class="text-muted mb-0">Los clientes con direcciones, pedidos, reseñas o carritos asociados no se pueden eliminar.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger" id="customer-delete-button">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+<script>
+(function () {
+    "use strict";
+    const form = document.getElementById("customer-form");
+    const fieldIds = { FirstName: "customer-first-name", LastName: "customer-last-name", Email: "customer-email", Phone: "customer-phone", BirthDate: "customer-birth-date" };
+    const fields = {};
+    Object.keys(fieldIds).forEach(function (key) { fields[key] = document.getElementById(fieldIds[key]); });
+    const detailIds = {
+        Id: "customer-detail-id",
+        FirstName: "customer-detail-first-name",
+        LastName: "customer-detail-last-name",
+        Email: "customer-detail-email",
+        Phone: "customer-detail-phone",
+        BirthDate: "customer-detail-birth-date",
+        IsActive: "customer-detail-is-active",
+        CreatedAt: "customer-detail-created-at",
+        UpdatedAt: "customer-detail-updated-at"
+    };
+    const idInput = document.getElementById("customer-id");
+    const activeInput = document.getElementById("customer-is-active");
+    const passwordInput = document.getElementById("customer-password");
+    const confirmInput = document.getElementById("customer-confirm-password");
+    const passwordHelp = document.getElementById("customer-password-help");
+    const title = document.getElementById("customer-form-title");
+    const saveButton = document.getElementById("customer-save-button");
+    const pageError = document.getElementById("customer-page-error");
+    const newButton = document.getElementById("add-customer-button");
+    const actionButtons = document.querySelectorAll(".js-customer-action");
+    const formElement = document.getElementById("customer-form-modal");
+    const formModal = bootstrap.Modal.getOrCreateInstance(formElement);
+    const detailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("customer-details-modal"));
+    const deleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("customer-delete-modal"));
+    const deleteForm = document.getElementById("customer-delete-form");
+    const deleteButton = document.getElementById("customer-delete-button");
+    let loading = false;
+    let formMode = form.dataset.openMode === "edit" ? "edit" : "create";
+
+    function validatePasswordPair() {
+        const mismatch = (passwordInput.value !== "" || confirmInput.value !== "") && passwordInput.value !== confirmInput.value;
+        confirmInput.setCustomValidity(mismatch ? "La contraseña y su confirmación no coinciden." : "");
+        return !mismatch;
+    }
+    function clearPasswords() {
+        passwordInput.value = "";
+        confirmInput.value = "";
+        validatePasswordPair();
+    }
+    function setMode(mode) {
+        formMode = mode;
+        const creating = mode !== "edit";
+        form.action = creating ? form.dataset.createUrl : form.dataset.editUrl;
+        title.textContent = creating ? "Agregar cliente" : "Editar cliente";
+        saveButton.textContent = creating ? "Agregar" : "Guardar cambios";
+        passwordInput.required = creating;
+        confirmInput.required = creating;
+        passwordHelp.textContent = creating ? "La contraseña debe tener entre 15 y 128 caracteres." : "Deje ambos campos vacíos para conservar la contraseña actual.";
+        saveButton.disabled = false;
+        validatePasswordPair();
+    }
+    function clearErrors() {
+        const summary = document.getElementById("customer-validation");
+        if (summary) summary.classList.add("d-none");
+        form.querySelectorAll(".input-validation-error").forEach(function (element) { element.classList.remove("input-validation-error"); });
+        form.querySelectorAll("[data-valmsg-for]").forEach(function (element) {
+            element.textContent = "";
+            element.classList.remove("field-validation-error");
+        });
+    }
+    function setLoading(value) {
+        loading = value;
+        newButton.disabled = value;
+        actionButtons.forEach(function (button) { button.disabled = value; });
+    }
+    async function loadCustomer(id) {
+        let response;
+        try {
+            response = await fetch(form.dataset.detailsUrl + "?id=" + encodeURIComponent(id), {
+                cache: "no-store", headers: { "Accept": "application/json" }
+            });
+        } catch (error) { throw new Error("No se pudo conectar con el sistema. Inténtelo de nuevo."); }
+        if (!response.ok) throw new Error(response.status === 404
+            ? "El cliente ya no existe. Actualice la página." : "No se pudo consultar el cliente.");
+        try { return await response.json(); }
+        catch (error) { throw new Error("No se pudo leer la información del cliente. Actualice la página."); }
+    }
+    newButton.addEventListener("click", function () {
+        form.reset();
+        idInput.value = "0";
+        Object.keys(fields).forEach(function (key) { fields[key].value = ""; });
+        activeInput.checked = true;
+        clearPasswords();
+        clearErrors();
+        pageError.classList.add("d-none");
+        setMode("create");
+        formModal.show();
+    });
+    actionButtons.forEach(function (button) {
+        button.addEventListener("click", async function () {
+            if (loading) return;
+            setLoading(true);
+            pageError.classList.add("d-none");
+            try {
+                const customer = await loadCustomer(button.dataset.customerId);
+                if (button.dataset.action === "edit") {
+                    form.reset();
+                    idInput.value = customer.Id;
+                    Object.keys(fields).forEach(function (key) { fields[key].value = customer[key] == null ? "" : customer[key]; });
+                    activeInput.checked = customer.IsActive === true;
+                    clearPasswords();
+                    clearErrors();
+                    setMode("edit");
+                    formModal.show();
+                } else if (button.dataset.action === "details") {
+                    Object.keys(detailIds).forEach(function (key) {
+                        let value = customer[key];
+                        if (key === "BirthDate" && value) value = value.split("-").reverse().join("/");
+                        if (key === "IsActive") value = value ? "Activo" : "Inactivo";
+                        document.getElementById(detailIds[key]).textContent = value == null || value === "" ? "Sin especificar" : value;
+                    });
+                    detailsModal.show();
+                } else if (button.dataset.action === "delete") {
+                    document.getElementById("customer-delete-id").value = customer.Id;
+                    document.getElementById("customer-delete-name").textContent = customer.FirstName + " " + customer.LastName;
+                    deleteButton.disabled = false;
+                    deleteButton.textContent = "Eliminar";
+                    deleteModal.show();
+                }
+            } catch (error) {
+                pageError.textContent = error.message;
+                pageError.classList.remove("d-none");
+                pageError.focus();
+            } finally { setLoading(false); }
+        });
+    });
+    passwordInput.addEventListener("input", validatePasswordPair);
+    confirmInput.addEventListener("input", validatePasswordPair);
+    formElement.addEventListener("shown.bs.modal", function () { fields.FirstName.focus(); });
+    form.addEventListener("submit", function (event) {
+        if (!validatePasswordPair()) {
+            event.preventDefault();
+            form.reportValidity();
+            return;
+        }
+        saveButton.disabled = true;
+        saveButton.textContent = "Guardando…";
+    });
+    deleteForm.addEventListener("submit", function () { deleteButton.disabled = true; deleteButton.textContent = "Eliminando…"; });
+    window.addEventListener("pageshow", function () {
+        clearPasswords();
+        setMode(formMode);
+        deleteButton.disabled = false;
+        deleteButton.textContent = "Eliminar";
+        setLoading(false);
+    });
+    setMode(formMode);
+    if (form.dataset.openMode === "create" || form.dataset.openMode === "edit") formModal.show();
+})();
+</script>
+}

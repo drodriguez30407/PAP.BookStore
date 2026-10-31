@@ -44,7 +44,9 @@
     <Compile Include="AuthorManager.cs" />
     <Compile Include="BookManager.cs" />
     <Compile Include="CategoryManager.cs" />
+    <Compile Include="CustomerManager.cs" />
     <Compile Include="GenreManager.cs" />
+    <Compile Include="PasswordHasher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PublisherManager.cs" />
     <Compile Include="SupplierManager.cs" />
